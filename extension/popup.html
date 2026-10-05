@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div id="setup" class="setup" hidden>
+    <h1>Welcome to Article Depot</h1>
+    <p>Before flagging articles, add the server address and your name.</p>
+    <button type="button" id="open-settings" class="primary">Open settings</button>
+  </div>
+
+  <form id="flag-form" hidden>
+    <header class="popup-header">
+      <h1>Flag this article</h1>
+      <span class="who">as <strong id="who-name"></strong></span>
+    </header>
+
+    <label class="field">
+      <span>Title</span>
+      <input id="title" type="text" maxlength="500">
+    </label>
+    <p id="url" class="url"></p>
+
+    <fieldset class="categories">
+      <legend>What should we do with it?</legend>
+      <label class="category category-option">
+        <input type="radio" name="category" value="option" required>
+        <span>
+          <strong>Option potential</strong>
+          <small>Explore further as a possible option</small>
+        </span>
+      </label>
+      <label class="category category-inspiration">
+        <input type="radio" name="category" value="inspiration">
+        <span>
+          <strong>Food for thought</strong>
+          <small>Interesting for a screenwriter</small>
+        </span>
+      </label>
+      <label class="category category-pass">
+        <input type="radio" name="category" value="pass">
+        <span>
+          <strong>Pass</strong>
+          <small>Don't explore further</small>
+        </span>
+      </label>
+    </fieldset>
+
+    <label class="field">
+      <span>Notes <small>(optional)</small></span>
+      <textarea id="notes" rows="3" maxlength="5000"></textarea>
+    </label>
+
+    <div class="actions">
+      <a href="#" id="view-depot">Open Article Depot</a>
+      <button type="submit" id="save" class="primary">Save</button>
+    </div>
+    <p id="message" class="message" role="status"></p>
+  </form>
+
+  <script src="shared.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

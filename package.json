@@ -1,0 +1,14 @@
+{
+  "name": "articledepot",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Collect articles flagged by the team into one shared page, sorted by who flagged them and what to do with them.",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "test": "node --test test/*.test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

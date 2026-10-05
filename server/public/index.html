@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Article Depot</title>
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <h1>Article Depot</h1>
+      <p class="tagline">Articles the team has flagged, sorted by who flagged them and what to do with them.</p>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <nav class="tabs" id="category-tabs" aria-label="Category"></nav>
+
+    <section class="toolbar">
+      <label class="field">
+        <span>Flagged by</span>
+        <select id="person-filter">
+          <option value="">Everyone</option>
+        </select>
+      </label>
+      <label class="field grow">
+        <span>Search</span>
+        <input id="search" type="search" placeholder="Title, site, notes…">
+      </label>
+      <label class="field">
+        <span>Group by</span>
+        <select id="group-by">
+          <option value="person">Person</option>
+          <option value="none">Nothing (newest first)</option>
+        </select>
+      </label>
+    </section>
+
+    <p id="status" class="status" role="status"></p>
+    <div id="results"></div>
+  </main>
+
+  <dialog id="key-dialog">
+    <form method="dialog" id="key-form">
+      <h2>Team key required</h2>
+      <p>Enter the team key your administrator set up for Article Depot.</p>
+      <input id="key-input" type="password" autocomplete="current-password" required>
+      <div class="dialog-actions">
+        <button type="submit" class="primary">Continue</button>
+      </div>
+    </form>
+  </dialog>
+
+  <template id="card-template">
+    <article class="card">
+      <div class="card-main">
+        <a class="card-title" target="_blank" rel="noopener noreferrer"></a>
+        <div class="card-meta"></div>
+        <p class="card-description"></p>
+        <div class="card-notes">
+          <textarea rows="2" placeholder="Add a note…" aria-label="Notes"></textarea>
+        </div>
+      </div>
+      <div class="card-actions">
+        <select class="card-category" aria-label="Category"></select>
+        <button type="button" class="link-button danger card-delete">Remove</button>
+      </div>
+    </article>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>

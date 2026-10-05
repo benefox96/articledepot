@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Article Depot settings</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body class="options">
+  <h1>Article Depot settings</h1>
+  <p class="intro">Connect the extension to your team's Article Depot server.</p>
+
+  <form id="options-form">
+    <label class="field">
+      <span>Your name</span>
+      <input id="name" type="text" maxlength="100" required placeholder="e.g. Jordan">
+      <span class="hint">Articles you flag are filed under this name, so use the same one on every computer.</span>
+    </label>
+
+    <label class="field">
+      <span>Server address</span>
+      <input id="server-url" type="url" required placeholder="https://articles.yourcompany.com">
+    </label>
+
+    <label class="field">
+      <span>Team key</span>
+      <input id="team-key" type="password" autocomplete="off">
+      <span class="hint">Leave blank if your server doesn't use one.</span>
+    </label>
+
+    <div class="actions">
+      <button type="submit" class="primary">Save</button>
+      <button type="button" id="test" class="secondary">Test connection</button>
+    </div>
+    <p id="message" class="message" role="status"></p>
+  </form>
+
+  <script src="shared.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>
