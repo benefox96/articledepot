@@ -1,0 +1,176 @@
+// Article storage on Cloudflare D1 (a hosted SQLite database).
+
+export const CATEGORIES = ['option', 'inspiration', 'pass'];
+
+const LIMITS = {
+  url: 2048,
+  title: 500,
+  description: 2000,
+  siteName: 200,
+  flaggedBy: 100,
+  notes: 5000,
+};
+
+export class ValidationError extends Error {}
+
+function cleanString(value, field, { required = false } = {}) {
+  if (value === undefined || value === null) value = '';
+  if (typeof value !== 'string') throw new ValidationError(`${field} must be a string`);
+  value = value.trim();
+  if (required && !value) throw new ValidationError(`${field} is required`);
+  if (value.length > LIMITS[field]) throw new ValidationError(`${field} is too long`);
+  return value;
+}
+
+function cleanUrl(value) {
+  const raw = cleanString(value, 'url', { required: true });
+  let parsed;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    throw new ValidationError('url is not a valid URL');
+  }
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    throw new ValidationError('url must be an http(s) link');
+  }
+  return parsed.toString();
+}
+
+function cleanCategory(value) {
+  if (!CATEGORIES.includes(value)) {
+    throw new ValidationError(`category must be one of: ${CATEGORIES.join(', ')}`);
+  }
+  return value;
+}
+
+// The table is created on first use, so a brand new database needs no setup step.
+const SCHEMA = [
+  `CREATE TABLE IF NOT EXISTS articles (
+    id TEXT PRIMARY KEY,
+    url TEXT NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    site_name TEXT NOT NULL DEFAULT '',
+    flagged_by TEXT NOT NULL,
+    category TEXT NOT NULL,
+    notes TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  )`,
+  'CREATE INDEX IF NOT EXISTS articles_url_person ON articles (url, flagged_by COLLATE NOCASE)',
+];
+
+function toArticle(row) {
+  return {
+    id: row.id,
+    url: row.url,
+    title: row.title,
+    description: row.description,
+    siteName: row.site_name,
+    flaggedBy: row.flagged_by,
+    category: row.category,
+    notes: row.notes,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export class Store {
+  constructor(db) {
+    this.db = db;
+  }
+
+  async ready() {
+    if (!this.schemaReady) {
+      this.schemaReady = this.db.batch(SCHEMA.map((sql) => this.db.prepare(sql))).catch((err) => {
+        this.schemaReady = null;
+        throw err;
+      });
+    }
+    return this.schemaReady;
+  }
+
+  async list() {
+    await this.ready();
+    const { results } = await this.db
+      .prepare('SELECT * FROM articles ORDER BY created_at DESC')
+      .all();
+    return results.map(toArticle);
+  }
+
+  async get(id) {
+    await this.ready();
+    const row = await this.db.prepare('SELECT * FROM articles WHERE id = ?').bind(id).first();
+    return row ? toArticle(row) : null;
+  }
+
+  /**
+   * Adds an article. If the same person already flagged the same URL, their
+   * existing entry is updated instead of creating a duplicate.
+   * Returns { article, created }.
+   */
+  async add(input) {
+    const fields = {
+      url: cleanUrl(input.url),
+      title: cleanString(input.title, 'title'),
+      description: cleanString(input.description, 'description'),
+      siteName: cleanString(input.siteName, 'siteName'),
+      flaggedBy: cleanString(input.flaggedBy, 'flaggedBy', { required: true }),
+      category: cleanCategory(input.category),
+      notes: cleanString(input.notes, 'notes'),
+    };
+    if (!fields.title) fields.title = fields.url;
+
+    await this.ready();
+    const now = new Date().toISOString();
+    const existing = await this.db
+      .prepare('SELECT id FROM articles WHERE url = ? AND flagged_by = ? COLLATE NOCASE')
+      .bind(fields.url, fields.flaggedBy)
+      .first();
+
+    if (existing) {
+      await this.db
+        .prepare(
+          `UPDATE articles SET title = ?, description = ?, site_name = ?, flagged_by = ?,
+             category = ?, notes = ?, updated_at = ? WHERE id = ?`
+        )
+        .bind(fields.title, fields.description, fields.siteName, fields.flaggedBy,
+          fields.category, fields.notes, now, existing.id)
+        .run();
+      return { article: await this.get(existing.id), created: false };
+    }
+
+    const id = crypto.randomUUID();
+    await this.db
+      .prepare(
+        `INSERT INTO articles (id, url, title, description, site_name, flagged_by, category,
+           notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      )
+      .bind(id, fields.url, fields.title, fields.description, fields.siteName, fields.flaggedBy,
+        fields.category, fields.notes, now, now)
+      .run();
+    return { article: await this.get(id), created: true };
+  }
+
+  /** Updates the editable fields (category, notes, title) of an article. */
+  async update(id, input) {
+    const article = await this.get(id);
+    if (!article) return null;
+    const category = input.category !== undefined ? cleanCategory(input.category) : article.category;
+    const notes = input.notes !== undefined ? cleanString(input.notes, 'notes') : article.notes;
+    const title = input.title !== undefined
+      ? cleanString(input.title, 'title') || article.url
+      : article.title;
+    await this.db
+      .prepare('UPDATE articles SET category = ?, notes = ?, title = ?, updated_at = ? WHERE id = ?')
+      .bind(category, notes, title, new Date().toISOString(), id)
+      .run();
+    return this.get(id);
+  }
+
+  async remove(id) {
+    await this.ready();
+    const result = await this.db.prepare('DELETE FROM articles WHERE id = ?').bind(id).run();
+    return result.meta.changes > 0;
+  }
+}

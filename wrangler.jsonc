@@ -1,0 +1,21 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // Must match the Worker's name in the Cloudflare dashboard.
+  "name": "articledepot",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-09-01",
+  // The shared Article Depot page.
+  "assets": {
+    "directory": "./public"
+  },
+  // The database is created automatically on the first deploy, and reused after that.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "articledepot"
+    }
+  ],
+  "observability": {
+    "enabled": true
+  }
+}

@@ -3,12 +3,13 @@
   "version": "1.0.0",
   "private": true,
   "description": "Collect articles flagged by the team into one shared page, sorted by who flagged them and what to do with them.",
-  "main": "server/server.js",
   "scripts": {
-    "start": "node server/server.js",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
     "test": "node --test test/*.test.js"
   },
-  "engines": {
-    "node": ">=18"
-  }
+  "devDependencies": {
+    "wrangler": "4.147.0"
+  },
+  "type": "module"
 }

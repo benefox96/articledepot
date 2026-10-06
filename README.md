@@ -1,6 +1,6 @@
 # Article Depot
 
-A browser extension plus a small shared server for collecting articles the team finds online into one webpage.
+A browser extension plus a small shared web app for collecting articles the team finds online into one webpage.
 
 When someone finds an article worth sharing, they click the **Article Depot** button in their browser and file it under one of three categories:
 
@@ -18,33 +18,51 @@ Each article is filed under the name of the person who flagged it. On the shared
 - move an article to a different category, add notes, or remove it
 
 ```
- ┌─────────────────────┐      POST /api/articles      ┌──────────────────────┐
- │ Browser extension   │ ───────────────────────────▶ │ Article Depot server │
- │ (each team member)  │                              │  • stores articles   │
- └─────────────────────┘                              │  • serves the page   │
-                                                      └──────────▲───────────┘
-                                         the team opens the page │
-                                                                 │
-                                                       https://your-server/
+ ┌─────────────────────┐      POST /api/articles      ┌──────────────────────────────┐
+ │ Browser extension   │ ───────────────────────────▶ │ Cloudflare (free plan)       │
+ │ (each team member)  │                              │  • Worker: the API           │
+ └─────────────────────┘                              │  • D1 database: the articles │
+                                                      │  • serves the shared page    │
+                                                      └──────────────▲───────────────┘
+                                             the team opens the page │
+                                                  https://articledepot.<you>.workers.dev
 ```
 
-## 1. Run the server
+## 1. Put it online with Cloudflare (free)
 
-The server needs only [Node.js](https://nodejs.org) 18 or newer, with no other dependencies.
+Article Depot runs on Cloudflare's free plan. Cloudflare runs the code (a "Worker"), stores the articles in its database (D1), and serves the shared page over HTTPS. No credit card is needed, and a team's usage is far below the free limits.
+
+You only do this once. It takes about 10 minutes and happens entirely in the browser. Cloudflare's dashboard changes from time to time, so button names may differ slightly from these steps.
+
+1. **Make sure this code is on the `main` branch** of the GitHub repository. Cloudflare publishes whatever is on `main`.
+2. **Create a free Cloudflare account** at [dash.cloudflare.com/sign-up](https://dash.cloudflare.com/sign-up) and verify your email.
+3. In the dashboard, go to **Workers & Pages** → **Create** → **Import a repository** (sometimes shown as *Connect to Git*).
+4. **Connect GitHub** when asked, and give Cloudflare access to the `articledepot` repository. Then select it.
+5. On the setup screen:
+   - **Project name:** `articledepot`. It must match exactly, because the code expects that name.
+   - **Build command:** leave empty.
+   - **Deploy command:** `npx wrangler deploy` (usually filled in already).
+
+   Click **Create and deploy** (or **Deploy**). The first deploy also creates the database automatically. Wait for it to finish, which takes a minute or two.
+6. **Set the team key.** Open the new `articledepot` Worker → **Settings** → **Variables and Secrets** → **Add**:
+   - **Type:** Secret
+   - **Variable name:** `TEAM_KEY`
+   - **Value:** a long password nobody would guess, e.g. four or five random words.
+
+   Save and deploy. Until the key is set, Article Depot refuses all requests, so it's never accidentally open to the public.
+7. **Find your address.** The Worker's overview page shows a link like `https://articledepot.your-name.workers.dev`. If Cloudflare asks you to choose a *workers.dev subdomain* first, pick something like your company name. Open the link: it should ask for the team key and then show an empty Article Depot page.
+
+That's it. Send the team the address and the team key, sending the key privately, along with the extension steps below.
+
+**Updates:** whenever new code lands on `main`, Cloudflare redeploys automatically. The articles are kept.
+
+**Your own web address (optional):** an address like `articles.yourcompany.com` needs your domain's DNS to be managed by Cloudflare (Worker → **Settings** → **Domains & Routes**). If your domain is managed by Wix or another provider, moving it is more involved, and the `workers.dev` address works just as well.
+
+**Backups:** Cloudflare's database keeps its own restore points for recent days ("Time Travel"). To keep your own copy, run this from any computer's terminal:
 
 ```bash
-TEAM_KEY="pick-a-long-random-phrase" PORT=3000 npm start
+curl -H "X-Team-Key: YOUR_TEAM_KEY" https://articledepot.YOUR-NAME.workers.dev/api/articles > articledepot-backup.json
 ```
-
-Then open `http://localhost:3000` to see the Article Depot page.
-
-| Setting | Default | Purpose |
-| --- | --- | --- |
-| `PORT` | `3000` | Port to listen on |
-| `TEAM_KEY` | *(none)* | Shared password. Anyone using the extension or the page must enter it. **Set this for any server reachable outside your own computer.** |
-| `DATA_FILE` | `data/articles.json` | Where articles are stored. Back this file up. |
-
-For the whole team to use it, run the server somewhere everyone can reach, such as a small cloud VM, an internal server, or a platform like Render, Railway or Fly.io. Put it behind HTTPS (most hosting platforms do this for you) so the team key isn't sent in the clear. If the platform's disk isn't permanent, point `DATA_FILE` at a mounted volume so articles survive restarts.
 
 ## 2. Install the extension
 
@@ -66,8 +84,8 @@ To roll it out to a larger team without Developer mode, publish it as an **unlis
 The first time you click the button, the extension asks for:
 
 - **Your name**: articles are filed under this name, so use the same spelling on every computer.
-- **Server address**: for example, `https://articles.yourcompany.com`.
-- **Team key**: the `TEAM_KEY` set on the server.
+- **Server address**: the Cloudflare address from step 7, e.g. `https://articledepot.your-name.workers.dev`.
+- **Team key**: the `TEAM_KEY` from step 6.
 
 Click **Test connection** to check everything is right.
 
@@ -90,20 +108,26 @@ It sends data only to the server address you configure.
 
 ## Development
 
+Requires [Node.js](https://nodejs.org) 22 or newer.
+
 ```bash
-npm test         # API tests (Node's built-in test runner)
-npm start        # run the server
+npm install
+echo "TEAM_KEY=dev-key" > .dev.vars   # local-only team key
+npm run dev                           # runs the Worker locally at http://localhost:8787, with a local database
+npm test                              # API tests
 ```
 
 ```
 extension/   Browser extension (Manifest V3): popup, settings page, icons
-server/      Node server: JSON API + the shared Article Depot page (server/public)
-test/        API tests
+public/      The shared Article Depot page (served by Cloudflare as static files)
+src/         The Worker: API (worker.js) and database access (store.js)
+test/        API tests (run the Worker in Node against a SQLite stand-in for D1)
+wrangler.jsonc   Cloudflare configuration
 ```
 
 ### API
 
-All `/api` routes require an `X-Team-Key` header when `TEAM_KEY` is set.
+All `/api` routes require an `X-Team-Key` header matching the `TEAM_KEY` secret.
 
 | Method | Path | Body |
 | --- | --- | --- |
