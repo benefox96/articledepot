@@ -101,6 +101,8 @@ form.addEventListener('submit', async (event) => {
         flaggedBy: settings.name,
         category,
         notes: notesInput.value,
+        // Left out when unticked, so re-flagging doesn't take an article off the To Discuss bookcase.
+        ...(document.getElementById('discuss').checked ? { discuss: true } : {}),
       }),
     });
     showMessage(created ? 'Saved to Article Depot.' : 'You already flagged this, so it was updated.', 'success');

@@ -36,6 +36,11 @@ function cleanUrl(value) {
   return parsed.toString();
 }
 
+function cleanBoolean(value, field) {
+  if (typeof value !== 'boolean') throw new ValidationError(`${field} must be true or false`);
+  return value;
+}
+
 function cleanCategory(value) {
   if (!CATEGORIES.includes(value)) {
     throw new ValidationError(`category must be one of: ${CATEGORIES.join(', ')}`);
@@ -54,10 +59,16 @@ const SCHEMA = [
     flagged_by TEXT NOT NULL,
     category TEXT NOT NULL,
     notes TEXT NOT NULL DEFAULT '',
+    discuss INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
   )`,
   'CREATE INDEX IF NOT EXISTS articles_url_person ON articles (url, flagged_by COLLATE NOCASE)',
+];
+
+// Columns added after the first release. Databases created before then get them on first use.
+const ADDED_COLUMNS = [
+  'ALTER TABLE articles ADD COLUMN discuss INTEGER NOT NULL DEFAULT 0',
 ];
 
 function toArticle(row) {
@@ -70,6 +81,7 @@ function toArticle(row) {
     flaggedBy: row.flagged_by,
     category: row.category,
     notes: row.notes,
+    discuss: Boolean(row.discuss),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -82,12 +94,23 @@ export class Store {
 
   async ready() {
     if (!this.schemaReady) {
-      this.schemaReady = this.db.batch(SCHEMA.map((sql) => this.db.prepare(sql))).catch((err) => {
+      this.schemaReady = this.migrate().catch((err) => {
         this.schemaReady = null;
         throw err;
       });
     }
     return this.schemaReady;
+  }
+
+  async migrate() {
+    await this.db.batch(SCHEMA.map((sql) => this.db.prepare(sql)));
+    for (const sql of ADDED_COLUMNS) {
+      try {
+        await this.db.prepare(sql).run();
+      } catch (err) {
+        if (!/duplicate column/i.test(String(err?.message))) throw err;
+      }
+    }
   }
 
   async list() {
@@ -119,12 +142,14 @@ export class Store {
       category: cleanCategory(input.category),
       notes: cleanString(input.notes, 'notes'),
     };
+    // Only set when given, so re-flagging an article doesn't take it off the To Discuss shelf.
+    const discuss = input.discuss === undefined ? undefined : cleanBoolean(input.discuss, 'discuss');
     if (!fields.title) fields.title = fields.url;
 
     await this.ready();
     const now = new Date().toISOString();
     const existing = await this.db
-      .prepare('SELECT id FROM articles WHERE url = ? AND flagged_by = ? COLLATE NOCASE')
+      .prepare('SELECT id, discuss FROM articles WHERE url = ? AND flagged_by = ? COLLATE NOCASE')
       .bind(fields.url, fields.flaggedBy)
       .first();
 
@@ -132,10 +157,11 @@ export class Store {
       await this.db
         .prepare(
           `UPDATE articles SET title = ?, description = ?, site_name = ?, flagged_by = ?,
-             category = ?, notes = ?, updated_at = ? WHERE id = ?`
+             category = ?, notes = ?, discuss = ?, updated_at = ? WHERE id = ?`
         )
         .bind(fields.title, fields.description, fields.siteName, fields.flaggedBy,
-          fields.category, fields.notes, now, existing.id)
+          fields.category, fields.notes, discuss === undefined ? existing.discuss : Number(discuss),
+          now, existing.id)
         .run();
       return { article: await this.get(existing.id), created: false };
     }
@@ -144,15 +170,15 @@ export class Store {
     await this.db
       .prepare(
         `INSERT INTO articles (id, url, title, description, site_name, flagged_by, category,
-           notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+           notes, discuss, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .bind(id, fields.url, fields.title, fields.description, fields.siteName, fields.flaggedBy,
-        fields.category, fields.notes, now, now)
+        fields.category, fields.notes, Number(discuss ?? false), now, now)
       .run();
     return { article: await this.get(id), created: true };
   }
 
-  /** Updates the editable fields (category, notes, title) of an article. */
+  /** Updates the editable fields (category, notes, title, discuss) of an article. */
   async update(id, input) {
     const article = await this.get(id);
     if (!article) return null;
@@ -161,9 +187,12 @@ export class Store {
     const title = input.title !== undefined
       ? cleanString(input.title, 'title') || article.url
       : article.title;
+    const discuss = input.discuss !== undefined ? cleanBoolean(input.discuss, 'discuss') : article.discuss;
     await this.db
-      .prepare('UPDATE articles SET category = ?, notes = ?, title = ?, updated_at = ? WHERE id = ?')
-      .bind(category, notes, title, new Date().toISOString(), id)
+      .prepare(
+        'UPDATE articles SET category = ?, notes = ?, title = ?, discuss = ?, updated_at = ? WHERE id = ?'
+      )
+      .bind(category, notes, title, Number(discuss), new Date().toISOString(), id)
       .run();
     return this.get(id);
   }

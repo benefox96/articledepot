@@ -135,3 +135,60 @@ test('returns 404 for unknown articles and paths', async () => {
   assert.equal((await request('/api/articles/nope', { method: 'DELETE' })).status, 404);
   assert.equal((await request('/api/other')).status, 404);
 });
+
+test('articles can be put on and taken off the To Discuss shelf', async () => {
+  const targetEnv = { DB: new FakeD1(), TEAM_KEY };
+  const create = await request('/api/articles', {
+    method: 'POST',
+    targetEnv,
+    body: { url: 'https://example.com/talk', flaggedBy: 'Ben', category: 'option', discuss: true },
+  });
+  const { article } = await create.json();
+  assert.equal(article.discuss, true);
+
+  // Re-flagging without saying anything about discuss keeps it on the shelf.
+  const again = await request('/api/articles', {
+    method: 'POST',
+    targetEnv,
+    body: { url: 'https://example.com/talk', flaggedBy: 'Ben', category: 'inspiration' },
+  });
+  assert.equal((await again.json()).article.discuss, true);
+
+  const patch = await request(`/api/articles/${article.id}`, {
+    method: 'PATCH',
+    targetEnv,
+    body: { discuss: false },
+  });
+  const updated = (await patch.json()).article;
+  assert.equal(updated.discuss, false);
+  assert.equal(updated.category, 'inspiration');
+
+  const plain = await request('/api/articles', {
+    method: 'POST',
+    targetEnv,
+    body: { url: 'https://example.com/other', flaggedBy: 'Ben', category: 'pass' },
+  });
+  assert.equal((await plain.json()).article.discuss, false);
+
+  const bad = await request(`/api/articles/${article.id}`, {
+    method: 'PATCH',
+    targetEnv,
+    body: { discuss: 'yes' },
+  });
+  assert.equal(bad.status, 400);
+});
+
+test('adds the discuss column to databases created before it existed', async () => {
+  const db = new FakeD1();
+  await db.prepare(`CREATE TABLE articles (
+    id TEXT PRIMARY KEY, url TEXT NOT NULL, title TEXT NOT NULL,
+    description TEXT NOT NULL DEFAULT '', site_name TEXT NOT NULL DEFAULT '',
+    flagged_by TEXT NOT NULL, category TEXT NOT NULL, notes TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL, updated_at TEXT NOT NULL)`).run();
+  await db.prepare(`INSERT INTO articles VALUES ('old', 'https://example.com/old', 'Old', '', '',
+    'Stephanie', 'option', '', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z')`).run();
+
+  const { articles } = await (await request('/api/articles', { targetEnv: { DB: db, TEAM_KEY } })).json();
+  assert.equal(articles.length, 1);
+  assert.equal(articles[0].discuss, false);
+});

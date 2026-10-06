@@ -5,70 +5,79 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Article Depot</title>
   <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <header class="site-header">
-    <div class="wrap">
-      <h1>Article Depot</h1>
-      <p class="tagline">Articles the team has flagged, sorted by who flagged them and what to do with them.</p>
+  <header class="masthead">
+    <div class="masthead-inner">
+      <div class="brand">
+        <h1>Article Depot</h1>
+        <p>The company reading room</p>
+      </div>
+      <div class="search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="search" type="search" placeholder="Search titles, sites, notes" aria-label="Search articles">
+      </div>
     </div>
+    <p id="status" class="status" role="status"></p>
   </header>
 
-  <main class="wrap">
-    <nav class="tabs" id="category-tabs" aria-label="Category"></nav>
-
-    <section class="toolbar">
-      <label class="field">
-        <span>Flagged by</span>
-        <select id="person-filter">
-          <option value="">Everyone</option>
-        </select>
-      </label>
-      <label class="field grow">
-        <span>Search</span>
-        <input id="search" type="search" placeholder="Title, site, notes…">
-      </label>
-      <label class="field">
-        <span>Group by</span>
-        <select id="group-by">
-          <option value="person">Person</option>
-          <option value="none">Nothing (newest first)</option>
-        </select>
-      </label>
-    </section>
-
-    <p id="status" class="status" role="status"></p>
-    <div id="results"></div>
+  <main class="library">
+    <div id="bookcases" class="bookcases"></div>
   </main>
+  <div class="floor" aria-hidden="true"></div>
 
-  <dialog id="key-dialog">
-    <form method="dialog" id="key-form">
-      <h2>Team key required</h2>
-      <p>Enter the team key your administrator set up for Article Depot.</p>
-      <input id="key-input" type="password" autocomplete="current-password" required>
-      <div class="dialog-actions">
-        <button type="submit" class="primary">Continue</button>
+  <dialog id="book-dialog" class="card-dialog" aria-labelledby="card-title">
+    <article class="card">
+      <button type="button" class="card-close" id="card-close" aria-label="Close">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+      <p class="card-kicker" id="card-kicker"></p>
+      <h2 id="card-title" class="card-title"></h2>
+      <p id="card-site" class="card-site"></p>
+      <p id="card-description" class="card-description"></p>
+      <a id="card-link" class="button button-primary" target="_blank" rel="noopener noreferrer">
+        Read the article
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg>
+      </a>
+
+      <div class="card-section">
+        <span class="card-label" id="shelf-label">Shelf</span>
+        <div class="segmented" id="card-category" role="radiogroup" aria-labelledby="shelf-label"></div>
       </div>
+
+      <div class="card-section">
+        <label class="toggle">
+          <input type="checkbox" id="card-discuss">
+          <span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span>
+          <span class="toggle-text">On the <strong>To Discuss</strong> bookcase</span>
+        </label>
+      </div>
+
+      <div class="card-section">
+        <label class="card-label" for="card-notes">Notes <span id="notes-saved" class="saved"></span></label>
+        <textarea id="card-notes" rows="3" placeholder="Add a note for the team…"></textarea>
+      </div>
+
+      <footer class="card-footer">
+        <button type="button" class="button-text danger" id="card-remove">Remove from the library</button>
+      </footer>
+    </article>
+  </dialog>
+
+  <dialog id="key-dialog" class="card-dialog">
+    <form method="dialog" id="key-form" class="card card-small">
+      <h2 class="card-title">Team key required</h2>
+      <p class="card-description">Enter the team key to open the Article Depot library.</p>
+      <input id="key-input" type="password" autocomplete="current-password" required aria-label="Team key">
+      <button type="submit" class="button button-primary">Open the library</button>
     </form>
   </dialog>
 
-  <template id="card-template">
-    <article class="card">
-      <div class="card-main">
-        <a class="card-title" target="_blank" rel="noopener noreferrer"></a>
-        <div class="card-meta"></div>
-        <p class="card-description"></p>
-        <div class="card-notes">
-          <textarea rows="2" placeholder="Add a note…" aria-label="Notes"></textarea>
-        </div>
-      </div>
-      <div class="card-actions">
-        <select class="card-category" aria-label="Category"></select>
-        <button type="button" class="link-button danger card-delete">Remove</button>
-      </div>
-    </article>
-  </template>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <script src="app.js"></script>
 </body>

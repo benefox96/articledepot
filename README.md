@@ -10,12 +10,14 @@ When someone finds an article worth sharing, they click the **Article Depot** bu
 | **Food for thought** | Interesting material for a screenwriter, but not something to option |
 | **Pass** | Not exploring further |
 
-Each article is filed under the name of the person who flagged it. On the shared **Article Depot page**, the team can:
+The shared **Article Depot page** is laid out as a library with three bookcases:
 
-- switch between the three categories
-- filter by person and search titles, sites and notes
-- group articles by person, or list everything newest-first
-- move an article to a different category, add notes, or remove it
+- **Ben** on the left and **Stephanie** on the right, holding the articles each of them flagged
+- **To Discuss** in the middle, for articles either person wants to talk through together
+
+Each bookcase has a shelf for each category (Option potential, Food for thought, Pass), and every article is a book on the right shelf. Click a book to read its details, open the article, add notes, move it to a different shelf, put it on (or take it off) the To Discuss bookcase, or remove it. The search box highlights matching books.
+
+Articles flagged under any other name get a bookcase of their own after these three. To change the names on the side bookcases, edit `LEFT_PERSON` and `RIGHT_PERSON` at the top of [`public/app.js`](public/app.js).
 
 ```
  ┌─────────────────────┐      POST /api/articles      ┌──────────────────────────────┐
@@ -83,7 +85,7 @@ To roll it out to a larger team without Developer mode, publish it as an **unlis
 
 The first time you click the button, the extension asks for:
 
-- **Your name**: articles are filed under this name, so use the same spelling on every computer.
+- **Your name**: the name on your bookcase (`Ben` or `Stephanie`). Articles are filed under this name, so use the same spelling on every computer.
 - **Server address**: the Cloudflare address from step 7, e.g. `https://articledepot.your-name.workers.dev`.
 - **Team key**: the `TEAM_KEY` from step 6.
 
@@ -93,7 +95,7 @@ Click **Test connection** to check everything is right.
 
 1. On an article, click the Article Depot button.
 2. The title is filled in from the page. Edit it if you like.
-3. Pick **Option potential**, **Food for thought** or **Pass**, optionally add a note, and click **Save**.
+3. Pick **Option potential**, **Food for thought** or **Pass**. Optionally tick **Also put it on the To Discuss bookcase** and add a note. Then click **Save**.
 
 If you flag the same article again, your existing entry is updated rather than duplicated. If a colleague flags the same article, it appears under their name as well, so you can see when more than one person found it interesting.
 
@@ -132,8 +134,8 @@ All `/api` routes require an `X-Team-Key` header matching the `TEAM_KEY` secret.
 | Method | Path | Body |
 | --- | --- | --- |
 | `GET` | `/api/articles` | |
-| `POST` | `/api/articles` | `{ url, title?, description?, siteName?, flaggedBy, category, notes? }` |
-| `PATCH` | `/api/articles/:id` | any of `{ category, notes, title }` |
+| `POST` | `/api/articles` | `{ url, title?, description?, siteName?, flaggedBy, category, notes?, discuss? }` |
+| `PATCH` | `/api/articles/:id` | any of `{ category, notes, title, discuss }` |
 | `DELETE` | `/api/articles/:id` | |
 
-`category` is one of `option`, `inspiration` or `pass`.
+`category` is one of `option`, `inspiration` or `pass`. `discuss` is `true` for articles on the To Discuss bookcase.
