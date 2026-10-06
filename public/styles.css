@@ -149,7 +149,11 @@ svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; 
 }
 
 .floor {
-  height: 56px;
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+  height: 128px;
   background:
     linear-gradient(180deg, rgba(0, 0, 0, 0.35), transparent 14px),
     repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.12) 0 1px, transparent 1px 160px),
@@ -362,6 +366,144 @@ svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; 
 
 .book.dim { opacity: 0.18; filter: grayscale(0.8); }
 .book.highlight { transform: translateY(-8px); }
+
+/* ---- Wastebasket --------------------------------------------------------- */
+
+.trash {
+  position: relative;
+  margin-top: -34px;
+  height: 150px;
+}
+
+.trash-button {
+  position: relative;
+  display: block;
+  width: 130px;
+  height: 143px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+.trash-button:hover,
+.trash.open .trash-button { transform: translateY(-3px); }
+.trash-button:focus-visible { outline: 2px solid var(--brass-1); outline-offset: 4px; border-radius: 12px; }
+
+.basket { stroke: none; fill: none; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 6px 6px rgba(0, 0, 0, 0.35)); }
+.basket-shadow { fill: rgba(0, 0, 0, 0.35); }
+.basket-label {
+  font: 700 8.5px var(--font-ui);
+  letter-spacing: 0.16em;
+  fill: var(--engrave);
+}
+.papers { opacity: 0; transform: translateY(10px); transition: opacity 0.2s ease, transform 0.25s ease; }
+.trash.has-items .papers { opacity: 1; transform: none; }
+
+.trash-count {
+  position: absolute;
+  top: 2px;
+  right: -6px;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 7px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--engrave);
+  background: linear-gradient(180deg, var(--brass-1), var(--brass-2));
+  box-shadow: 0 0 0 1px rgba(60, 40, 10, 0.5), 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+.trash-count[hidden] { display: none; }
+.trash.has-matches .trash-count { background: var(--accent); color: #fff; }
+
+/* The list of passed articles unfolds upward from the basket. */
+.trash-panel {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 4px);
+  width: min(560px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateX(-50%) translateY(16px);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--card-text);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+  transition: max-height 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.25s ease, transform 0.35s ease;
+}
+.trash.open .trash-panel {
+  max-height: min(560px, 62vh);
+  opacity: 1;
+  transform: translateX(-50%);
+}
+.trash-panel::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -7px;
+  width: 14px;
+  height: 14px;
+  margin-left: -7px;
+  background: var(--card);
+  transform: rotate(45deg);
+}
+
+.trash-panel-header {
+  flex-shrink: 0;
+  padding: 18px 22px 12px;
+  border-bottom: 2px solid var(--card-rule);
+}
+.trash-panel-header h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+.trash-panel-header p { margin: 2px 0 0; font-size: 0.85rem; color: var(--card-muted); }
+
+.trash-list {
+  list-style: none;
+  margin: 0;
+  padding: 6px 8px 12px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.trash-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.trash-item:hover,
+.trash-item:focus-visible { background: color-mix(in srgb, var(--card-muted) 12%, transparent); }
+.trash-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.trash-item.dim { opacity: 0.35; }
+.trash-item-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1rem;
+  line-height: 1.3;
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--card-text) 30%, transparent);
+  text-decoration-thickness: 1px;
+}
+.trash-item-meta { font-size: 0.8rem; color: var(--card-muted); }
+.trash-empty { padding: 18px 14px; color: var(--card-muted); font-style: italic; font-family: var(--font-display); }
 
 /* ---- Card dialog ---------------------------------------------------------- */
 

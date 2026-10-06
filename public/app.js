@@ -5,12 +5,13 @@
 const LEFT_PERSON = 'Ben';
 const RIGHT_PERSON = 'Stephanie';
 
-const SHELVES = [
+const CATEGORIES = [
   { category: 'option', label: 'Option potential' },
   { category: 'inspiration', label: 'Food for thought' },
   { category: 'pass', label: 'Pass' },
 ];
-const SHELF_LABELS = Object.fromEntries(SHELVES.map((s) => [s.category, s.label]));
+// Passed articles go in the wastebasket instead of on a shelf.
+const SHELVES = CATEGORIES.filter((c) => c.category !== 'pass');
 
 // Leather-bound spine colors. Light ones get dark lettering.
 const SPINES = [
@@ -20,13 +21,19 @@ const SPINES = [
   { color: '#c49a45', light: true }, { color: '#cdb98f', light: true }, { color: '#9fb3a3', light: true },
 ];
 
-const state = { articles: [], search: '', openId: null };
+const state = { articles: [], search: '', openId: null, trashOpen: false };
 
 const els = {
   bookcases: document.getElementById('bookcases'),
   search: document.getElementById('search'),
   status: document.getElementById('status'),
   toast: document.getElementById('toast'),
+  trash: document.getElementById('trash'),
+  trashButton: document.getElementById('trash-button'),
+  trashCount: document.getElementById('trash-count'),
+  trashPanel: document.getElementById('trash-panel'),
+  trashTitle: document.getElementById('trash-title'),
+  trashList: document.getElementById('trash-list'),
   keyDialog: document.getElementById('key-dialog'),
   keyForm: document.getElementById('key-form'),
   keyInput: document.getElementById('key-input'),
@@ -154,6 +161,7 @@ function bookcaseLayout() {
   const others = new Map();
 
   for (const article of state.articles) {
+    if (article.category === 'pass') continue;
     if (article.discuss) cases[1].articles.push(article);
     else if (samePerson(article.flaggedBy, LEFT_PERSON)) cases[0].articles.push(article);
     else if (samePerson(article.flaggedBy, RIGHT_PERSON)) cases[2].articles.push(article);
@@ -223,6 +231,7 @@ function buildBookcase(bookcase) {
   name.textContent = bookcase.name;
   const count = document.createElement('p');
   const n = bookcase.articles.length;
+  section.dataset.count = n;
   count.textContent = `${n} ${n === 1 ? 'article' : 'articles'}`;
   plate.append(name, count);
   band.append(plate);
@@ -267,11 +276,71 @@ function buildBookcase(bookcase) {
   return section;
 }
 
+// ---- Wastebasket ------------------------------------------------------------
+
+function renderTrash() {
+  const passed = state.articles.filter((a) => a.category === 'pass');
+  const matching = state.search ? passed.filter(matchesSearch).length : 0;
+
+  els.trashCount.textContent = state.search && matching ? `${matching} match` : passed.length;
+  els.trashCount.hidden = !passed.length;
+  els.trash.classList.toggle('has-items', passed.length > 0);
+  els.trash.classList.toggle('has-matches', matching > 0);
+  els.trashButton.setAttribute('aria-label', `Passed articles: ${passed.length}`);
+  els.trashTitle.textContent = `Passed articles · ${passed.length}`;
+
+  els.trashList.replaceChildren();
+  if (!passed.length) {
+    const empty = document.createElement('li');
+    empty.className = 'trash-empty';
+    empty.textContent = 'Nothing passed on yet.';
+    els.trashList.append(empty);
+  }
+  for (const article of passed) {
+    const item = document.createElement('li');
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'trash-item';
+    if (!matchesSearch(article)) button.classList.add('dim');
+    const title = document.createElement('span');
+    title.className = 'trash-item-title';
+    title.textContent = article.title;
+    const meta = document.createElement('span');
+    meta.className = 'trash-item-meta';
+    meta.textContent = [siteName(article), article.flaggedBy, formatDate(article.updatedAt)]
+      .filter(Boolean)
+      .join(' · ');
+    button.append(title, meta);
+    button.addEventListener('click', () => openCard(article.id));
+    item.append(button);
+    els.trashList.append(item);
+  }
+}
+
+function setTrashOpen(open) {
+  state.trashOpen = open;
+  els.trash.classList.toggle('open', open);
+  els.trashButton.setAttribute('aria-expanded', String(open));
+  els.trashPanel.inert = !open;
+}
+
+els.trashButton.addEventListener('click', () => setTrashOpen(!state.trashOpen));
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && state.trashOpen && !els.card.dialog.open) setTrashOpen(false);
+});
+document.addEventListener('click', (event) => {
+  // Clicking anywhere outside the wastebasket (or the card it opened) folds it away.
+  if (!state.trashOpen || els.trash.contains(event.target)) return;
+  if (els.card.dialog.open || event.target.closest('dialog')) return;
+  setTrashOpen(false);
+});
+
 function render() {
   // Keep each shelf's scroll position when re-rendering.
   const scrolls = [...els.bookcases.querySelectorAll('.books')].map((b) => b.scrollLeft);
   els.bookcases.replaceChildren(...bookcaseLayout().map(buildBookcase));
   els.bookcases.querySelectorAll('.books').forEach((b, i) => { b.scrollLeft = scrolls[i] || 0; });
+  renderTrash();
 
   if (state.search) {
     const matches = state.articles.filter(matchesSearch).length;
@@ -304,14 +373,14 @@ function fillCard() {
   c.link.href = article.url;
 
   c.category.replaceChildren();
-  for (const shelf of SHELVES) {
+  for (const shelf of CATEGORIES) {
     const button = document.createElement('button');
     button.type = 'button';
     button.setAttribute('role', 'radio');
     button.setAttribute('aria-checked', String(article.category === shelf.category));
     button.textContent = shelf.label;
     button.addEventListener('click', () => changeArticle({ category: shelf.category },
-      `Moved to ${shelf.label}`));
+      shelf.category === 'pass' ? 'Moved to the wastebasket' : `Moved to ${shelf.label}`));
     c.category.append(button);
   }
 

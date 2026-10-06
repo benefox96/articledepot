@@ -15,7 +15,9 @@ The shared **Article Depot page** is laid out as a library with three bookcases:
 - **Ben** on the left and **Stephanie** on the right, holding the articles each of them flagged
 - **To Discuss** in the middle, for articles either person wants to talk through together
 
-Each bookcase has a shelf for each category (Option potential, Food for thought, Pass), and every article is a book on the right shelf. Click a book to read its details, open the article, add notes, move it to a different shelf, put it on (or take it off) the To Discuss bookcase, or remove it. The search box highlights matching books.
+Each bookcase has two shelves, **Option potential** and **Food for thought**, and every article is a book on the right shelf. Articles marked **Pass** go in the wastebasket on the floor in the middle. Click it to unfold the list of passed articles.
+
+Click any book (or passed article) to read its details, open the article, add notes, move it to a different shelf or the wastebasket, put it on (or take it off) the To Discuss bookcase, or remove it for good. The search box highlights matching books, and the wastebasket shows how many passed articles match.
 
 Articles flagged under any other name get a bookcase of their own after these three. To change the names on the side bookcases, edit `LEFT_PERSON` and `RIGHT_PERSON` at the top of [`public/app.js`](public/app.js).
 
