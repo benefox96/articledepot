@@ -34,7 +34,7 @@ Article Depot runs on Cloudflare's free plan. Cloudflare runs the code (a "Worke
 
 You only do this once. It takes about 10 minutes and happens entirely in the browser. Cloudflare's dashboard changes from time to time, so button names may differ slightly from these steps.
 
-1. **Make sure this code is on the `main` branch** of the GitHub repository. Cloudflare publishes whatever is on `main`.
+1. **Make sure this code is on the repository's default branch** on GitHub. Cloudflare publishes whatever is on that branch.
 2. **Create a free Cloudflare account** at [dash.cloudflare.com/sign-up](https://dash.cloudflare.com/sign-up) and verify your email.
 3. In the dashboard, go to **Workers & Pages** → **Create** → **Import a repository** (sometimes shown as *Connect to Git*).
 4. **Connect GitHub** when asked, and give Cloudflare access to the `articledepot` repository. Then select it.
@@ -54,7 +54,7 @@ You only do this once. It takes about 10 minutes and happens entirely in the bro
 
 That's it. Send the team the address and the team key, sending the key privately, along with the extension steps below.
 
-**Updates:** whenever new code lands on `main`, Cloudflare redeploys automatically. The articles are kept.
+**Updates:** whenever new code lands on the default branch, Cloudflare redeploys automatically. The articles are kept.
 
 **Your own web address (optional):** an address like `articles.yourcompany.com` needs your domain's DNS to be managed by Cloudflare (Worker → **Settings** → **Domains & Routes**). If your domain is managed by Wix or another provider, moving it is more involved, and the `workers.dev` address works just as well.
 
