@@ -77,7 +77,9 @@ The extension lives in the [`extension/`](extension) folder and works in Chrome,
 1. Go to `chrome://extensions` (or `edge://extensions`).
 2. Turn on **Developer mode**.
 3. Click **Load unpacked** and choose the `extension` folder.
-4. Pin the Article Depot button to the toolbar.
+4. **Pin it to the toolbar.** Chrome tucks new extensions into the puzzle-piece menu at the right of the toolbar. Click the puzzle piece, then the pin next to **Article Depot**. Its icon (three books on a shelf) then stays visible next to the address bar.
+
+**Updating:** when a new version of the extension is pulled into the `extension` folder, click the reload arrow on Article Depot's card in `chrome://extensions`.
 
 **Firefox**: go to `about:debugging#/runtime/this-firefox` → **Load Temporary Add-on…** → pick `extension/manifest.json`. A temporary add-on is removed when Firefox restarts. To install it permanently, the extension has to be signed through [addons.mozilla.org](https://addons.mozilla.org/developers/) (an unlisted add-on is fine).
 
@@ -95,9 +97,9 @@ Click **Test connection** to check everything is right.
 
 ## Using it
 
-1. On an article, click the Article Depot button.
+1. On an article, click the Article Depot button (the three books) in the toolbar.
 2. The title is filled in from the page. Edit it if you like.
-3. Pick **Option potential**, **Food for thought** or **Pass**. Optionally tick **Also put it on the To Discuss bookcase** and add a note. Then click **Save**.
+3. Pick **Option potential**, **Food for thought** or **Pass** (passed articles go in the wastebasket). Optionally tick **Also put it on the To Discuss bookcase** and add a note. Then click **Save**.
 
 If you flag the same article again, your existing entry is updated rather than duplicated. If a colleague flags the same article, it appears under their name as well, so you can see when more than one person found it interesting.
 

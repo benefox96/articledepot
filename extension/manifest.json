@@ -1,12 +1,12 @@
 {
   "manifest_version": 3,
   "name": "Article Depot",
-  "version": "1.0.0",
-  "description": "Flag articles for the team: option potential, food for thought, or pass.",
+  "version": "1.1.0",
+  "description": "Send the article you are reading to the Article Depot library: option potential, food for thought, or pass.",
   "permissions": ["storage", "activeTab", "scripting"],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Flag this article",
+    "default_title": "Send this article to Article Depot",
     "default_icon": {
       "16": "icons/icon16.png",
       "32": "icons/icon32.png",
